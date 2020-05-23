@@ -1,0 +1,110 @@
+---
+title: "BBC Children In Need"
+author: "Jin Chen"
+output: html_document
+---
+
+```{r Load-libraries-data, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(readxl)
+library(lubridate)
+
+bbc_raw <- read_excel("data/360-giving-data.xlsx")
+
+bbc <- bbc_raw %>% 
+  rename(grant_amount = `Amount Awarded`,
+         grant_program = `Grant Programme:Title`,
+         grant_duration = `Planned Dates:Duration (months)`) %>%
+  mutate(grant_year = year(`Award Date`)) %>% 
+  filter(grant_year > 2015) %>% 
+  mutate(grant_year_categorical = factor(grant_year))
+```
+
+# Histogram
+
+```{r histogram-award}
+ggplot(data = bbc,
+       mapping = aes(x = grant_amount)) +
+  geom_histogram(binwidth = 10000, color = "White")
+```
+
+Next let's look at the year and amount
+```{r Histogram-year}
+ggplot(data = bbc,
+       mapping = aes(x = grant_amount, fill = grant_year_categorical)) +
+  geom_histogram(binwidth = 10000, color = "White")
+```
+
+```{r}
+ggplot(data = bbc,
+       mapping = aes(x = grant_amount, fill = grant_year_categorical)) +
+  geom_histogram(binwidth = 10000, color = "White") +
+  facet_wrap(vars(grant_year_categorical)) +
+  guides(fill = FALSE)
+```
+
+# Points
+```{r semi-transparency-strip-plot}
+ggplot(bbc, aes(x = grant_year_categorical, y = grant_amount)) +
+  geom_point(alpha = 0.1)
+```
+
+```{r}
+ggplot(bbc, aes(x = grant_year_categorical, y = grant_amount, color = grant_year_categorical)) +
+  geom_point(position = position_jitter(height = 0, width = 0.4)) +
+  guides(color = FALSE)
+```
+```{r}
+ggplot(bbc, aes(x = grant_year_categorical, y = grant_amount, color = grant_program)) +
+  geom_point(position = position_jitter(height = 0, width = 0.4))
+```
+
+# Boxplot
+```{r}
+ggplot(bbc, aes(x = grant_year_categorical, y = grant_amount, color = grant_program)) +
+  geom_boxplot()
+```
+
+# Violin plot
+```{r}
+ggplot(bbc, aes(x = grant_year_categorical, y = grant_amount, color = grant_program)) +
+  geom_violin()
+```
+
+# Summarized Data
+```{r clean-year-bbc-something}
+bbc_by_year <- bbc %>% 
+  group_by(grant_year_categorical) %>% 
+  summarize(total_awarded = sum(grant_amount),
+            avg_awarded = mean(grant_amount),
+            number = n())
+```
+
+
+```{r}
+ggplot(bbc_by_year, 
+       aes(x = grant_year_categorical, y = number)) +
+  geom_col()
+```
+
+```{r}
+bbc_by_year_size <- bbc %>% 
+  group_by(grant_year_categorical, grant_program) %>% 
+  summarize(total_awarded = sum(grant_amount),
+            avg_awarded = mean(grant_amount),
+            number = n())
+```
+
+```{r}
+ggplot(bbc_by_year_size, 
+       aes(x = grant_year_categorical, y = number, fill = grant_program)) +
+  geom_col(position = position_dodge())
+```
+```{r}
+ggplot(bbc_by_year_size, 
+       aes(x = grant_year_categorical, y = number, fill = grant_program)) +
+  geom_col() +
+  facet_wrap(vars(grant_program), ncol = 1) +
+  guides(fill = FALSE)
+```
+
