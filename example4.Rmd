@@ -1,0 +1,103 @@
+---
+title: "Example4"
+output: html_document
+---
+
+```{r load-library-data, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(scales)
+
+births_1994_1999 <- read_csv("data/US_births_1994-2003_CDC_NCHS.txt") %>% 
+  filter(year < 2000)
+
+births_2000_2014 <- read_csv("data/US_births_2000-2014_SSA.txt")
+
+births_combined <- bind_rows(births_1994_1999, births_2000_2014)
+```
+
+# Cleaning data
+
+We will change a few columns
+
+```{r Cleaning Data}
+# The c() function lets us make a list of values
+month_names <- c("January", "February", "March", "April", "May", "June", "July",
+                 "August", "September", "October", "November", "December")
+
+day_names <- c("Monday", "Tuesday", "Wednesday", 
+               "Thursday", "Friday", "Saturday", "Sunday")
+
+births <- births_combined %>% 
+  mutate(month = factor(month, labels = month_names, ordered = TRUE)) %>%
+  mutate(day_of_week = factor(day_of_week, labels = day_names, ordered = TRUE),
+         date_of_month_cat = factor(date_of_month)) %>% 
+  mutate(weekend = ifelse(day_of_week %in% c("Saturday", "Sunday"), 
+                           TRUE,FALSE))
+```
+
+# Bar Plot
+```{r Bar Plot}
+total_births_weekday <- births %>% 
+  group_by(day_of_week) %>% 
+  summarize(total = sum(births)) %>% 
+  mutate(weekend = ifelse(day_of_week %in% c("Saturday", "Sunday"), 
+                           TRUE,FALSE))
+
+ggplot(data = total_births_weekday,
+       mapping = aes(x = day_of_week,
+                     y = total,
+                     fill = weekend)) +
+  geom_col() +
+  scale_fill_manual(values = c("grey70", "#f2ad22")) +
+  guides(fill = FALSE)
+```
+
+```{r PointRange Plot}
+ggplot(data = total_births_weekday,
+       mapping = aes(x = day_of_week,
+                     y = total,
+                     color = weekend)) +
+  geom_pointrange(aes(ymin = 0, ymax = total), size = 3, fatten = 5) +
+  scale_color_manual(values = c("grey70", "#f2ad22")) +
+#This formats the numbers into comma style on the left side
+  scale_y_continuous(labels = comma) +
+  guides(color = FALSE)
+```
+
+# Strip plot
+```{r Strip Plot}
+ggplot(data = births,
+       mapping = aes(x = day_of_week, y = births, color = weekend)) +
+  geom_point(position = position_jitter(height = 0, width = 0.2),
+             size = 0.5, alpha = 0.5) +
+    scale_color_manual(values = c("grey70", "#f2ad22")) 
+```
+```{r BeeSwarm Plot}
+library(ggbeeswarm)
+
+ggplot(data = births,
+       mapping = aes(x = day_of_week, y = births, color = weekend)) +
+  geom_quasirandom(size = 0.005) +
+    scale_color_manual(values = c("grey70", "#f2ad22")) 
+```
+
+# Heatmap
+
+```{r Heatmap}
+avg_births_month_day <- births %>% 
+  group_by(month, date_of_month_cat) %>% 
+  summarize(avg_birth = mean(births))
+
+ggplot(data = avg_births_month_day,
+       mapping = aes( x = date_of_month_cat, y = fct_rev(month), fill = avg_birth)) +
+  geom_tile() +
+  scale_fill_viridis_c(option = "inferno") +
+  #makes each rectangle into squares
+  coord_equal() +
+  labs(x = "Day of the month", y = NULL,
+       title = "Average births per day",
+       subtitle = "1994-2014",
+       fill = "Average births") +
+  theme_minimal()
+```
+
