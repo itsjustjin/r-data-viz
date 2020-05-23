@@ -1,0 +1,25 @@
+---
+title: "Excercise 1 - Simple Scatter Plot"
+author: "Jin Chen"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Reflection
+Some text
+
+# My first plot
+
+```{r load-libraries-data, warning=FALSE, message=FALSE}
+library(tidyverse)
+
+cars <- read_csv("data/cars.csv")
+```
+
+```{r}
+ggplot (data = cars, mapping = aes(x = displ, y = hwy )) +
+ geom_point()
+
+```
+
